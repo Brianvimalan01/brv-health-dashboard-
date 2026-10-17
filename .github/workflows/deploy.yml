@@ -1,0 +1,113 @@
+name: Deploy to GitHub Pages
+
+# Builds the static site and publishes it to GitHub Pages. Once a night (and
+# when run by hand) it first signs in to Garmin, refreshes the encrypted data
+# file and saves it on the `garmin-data` branch. See docs/garmin.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "30 16 * * *" # 00:30 in Malaysia
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to save the encrypted Garmin file on the garmin-data branch
+    outputs:
+      sync: ${{ steps.sync.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out base path
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          if [ "${REPO,,}" = "${OWNER,,}.github.io" ]; then
+            echo "BASE_PATH=/" >> "$GITHUB_ENV"
+          else
+            echo "BASE_PATH=/${REPO}" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore Garmin data
+        run: |
+          mkdir -p public/data
+          if git fetch --depth=1 origin garmin-data 2>/dev/null; then
+            git show origin/garmin-data:garmin.enc.json > public/data/garmin.enc.json
+            echo "Restored encrypted Garmin data."
+          else
+            echo "No garmin-data branch yet."
+          fi
+
+      - name: Sync Garmin
+        id: sync
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && env.GARMIN_EMAIL != ''
+        continue-on-error: true
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          GARMIN_DATA_PASSPHRASE: ${{ secrets.GARMIN_DATA_PASSPHRASE }}
+          DATA_FILE: public/data/garmin.enc.json
+        run: npm run garmin-sync
+
+      - name: Save Garmin data to the garmin-data branch
+        if: steps.sync.outcome == 'success'
+        run: |
+          cp public/data/garmin.enc.json "$RUNNER_TEMP/garmin.enc.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse --verify -q origin/garmin-data >/dev/null; then
+            git worktree add "$RUNNER_TEMP/data" origin/garmin-data
+            git -C "$RUNNER_TEMP/data" checkout -B garmin-data
+          else
+            git worktree add --orphan -b garmin-data "$RUNNER_TEMP/data"
+          fi
+          cp "$RUNNER_TEMP/garmin.enc.json" "$RUNNER_TEMP/data/garmin.enc.json"
+          git -C "$RUNNER_TEMP/data" add garmin.enc.json
+          git -C "$RUNNER_TEMP/data" commit -m "Garmin sync $(date -u +%F)" || echo "No change"
+          git -C "$RUNNER_TEMP/data" push origin garmin-data
+
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: out
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # The site still deploys when Garmin fails, but the run is marked failed
+      # so GitHub emails you.
+      - name: Report Garmin sync failure
+        if: needs.build.outputs.sync == 'failure'
+        run: |
+          echo "::error::Garmin sync failed. Open the 'Sync Garmin' step in the build job for the reason."
+          exit 1

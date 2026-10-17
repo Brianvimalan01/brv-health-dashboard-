@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --foreground: #1a1a1a;
+  --muted: #6b6b6b;
+  --border: #e4e4e0;
+  --accent: #2563eb;
+  --deficit: #15803d;
+  --surplus: #b45309;
+  --maintenance: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f0f10;
+    --surface: #18181b;
+    --foreground: #ededed;
+    --muted: #a1a1aa;
+    --border: #2a2a2e;
+    --accent: #60a5fa;
+    --deficit: #4ade80;
+    --surplus: #fbbf24;
+    --maintenance: #60a5fa;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-deficit: var(--deficit);
+  --color-surplus: var(--surplus);
+  --color-maintenance: var(--maintenance);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+input[type="number"],
+input[type="date"],
+input[type="password"],
+textarea {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}

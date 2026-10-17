@@ -38,7 +38,12 @@ export function useGarmin() {
     async (passphrase: string, remember: boolean) => {
       if (!envelope) return;
       try {
-        const data = await decryptJson<GarminData>(envelope, passphrase);
+        // Accept the phrase with or without surrounding spaces, whichever the
+        // file was encrypted with.
+        const trimmed = passphrase.trim();
+        const data = await decryptJson<GarminData>(envelope, trimmed).catch((err) =>
+          trimmed !== passphrase ? decryptJson<GarminData>(envelope, passphrase) : Promise.reject(err),
+        );
         if (remember) localStorage.setItem(PASSPHRASE_KEY, passphrase);
         setState({ status: "unlocked", data });
       } catch (err) {

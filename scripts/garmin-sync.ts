@@ -31,20 +31,31 @@ function report(level: "notice" | "error", message: string) {
 async function main() {
   const username = process.env.GARMIN_TOKENS ? "" : requireEnv("GARMIN_EMAIL");
   const password = process.env.GARMIN_TOKENS ? "" : requireEnv("GARMIN_PASSWORD");
-  const passphrase = requireEnv("GARMIN_DATA_PASSPHRASE");
+  // Trimmed, because a stray space or newline is easy to paste into a secret
+  // and impossible to see; the browser trims what you type too.
+  const rawPassphrase = requireEnv("GARMIN_DATA_PASSPHRASE");
+  const passphrase = rawPassphrase.trim();
   const file = process.env.DATA_FILE ?? "public/data/garmin.enc.json";
   const timeZone = process.env.APP_TIMEZONE || DEFAULT_TIMEZONE;
 
   let data: GarminData = { version: 1, syncedAt: "", days: {}, activities: [] };
   if (existsSync(file)) {
     const envelope = JSON.parse(readFileSync(file, "utf8")) as Envelope;
-    // Throws on a wrong passphrase, so existing history is never overwritten.
-    data = await decryptJson<GarminData>(envelope, passphrase);
+    const decrypted = await decryptJson<GarminData>(envelope, passphrase).catch(() =>
+      decryptJson<GarminData>(envelope, rawPassphrase).catch(() => null),
+    );
+    if (decrypted) {
+      data = decrypted;
+    } else {
+      // The passphrase changed. Garmin still has the history, so start over
+      // with a longer backfill rather than failing every night.
+      report("notice", "Existing data used a different passphrase; rebuilding it from Garmin.");
+    }
   }
 
-  // First run backfills a month; later runs refresh the last few days so late
+  // First run backfills three months; later runs refresh the last few days so late
   // watch syncs finalize them.
-  const days = Number(process.env.SYNC_DAYS) || (Object.keys(data.days).length ? 3 : 30);
+  const days = Number(process.env.SYNC_DAYS) || (Object.keys(data.days).length ? 3 : 90);
   const today = localDate(new Date(), timeZone);
   const dates = dateRange(addDays(today, -(days - 1)), today);
 

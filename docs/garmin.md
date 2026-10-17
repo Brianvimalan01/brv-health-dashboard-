@@ -44,11 +44,12 @@ GitHub's. The fix is to sign in once from your own computer and give the job
 the resulting session tokens instead:
 
 ```bash
-GARMIN_EMAIL=you@example.com GARMIN_PASSWORD='...' npm run garmin-login
+npm run garmin-login
 ```
 
-Copy the contents of the `garmin-tokens.json` it writes into a new repository
-secret named `GARMIN_TOKENS`, then delete the file. When `GARMIN_TOKENS` is
+It asks for your Garmin email and password (the password isn't shown or
+saved) and, on a Mac, copies the session tokens to the clipboard. Paste them
+into a new repository secret named `GARMIN_TOKENS`. When `GARMIN_TOKENS` is
 set, the job uses it and never sends your password. The tokens last about a
 year; repeat this when the sync starts failing with a sign-in error.
 

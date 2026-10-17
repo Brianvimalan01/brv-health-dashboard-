@@ -21,7 +21,7 @@ function FeedbackText({ state }: { state: Feedback }) {
 }
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
-  return <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white">{children}</button>;
+  return <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-zinc-950">{children}</button>;
 }
 
 function NumberField(props: {

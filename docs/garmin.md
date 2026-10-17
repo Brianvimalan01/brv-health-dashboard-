@@ -8,7 +8,7 @@ Garmin account.
 1. Every night at 00:30 Malaysia time (and whenever you run the workflow by
    hand), `.github/workflows/deploy.yml` runs `scripts/garmin-sync.ts`.
 2. The script signs in to Garmin Connect with your account, fetches the last
-   3 days (30 on the very first run) and merges them into the existing data.
+   3 days (90 on the very first run) and merges them into the existing data.
 3. It encrypts everything with your passphrase (AES-256-GCM, key from
    PBKDF2-SHA256 with 600,000 rounds) and saves the result as
    `garmin.enc.json` on the `garmin-data` branch.
@@ -33,9 +33,9 @@ New repository secret**, and add:
 Then **Actions → Deploy to GitHub Pages → Run workflow** to do the first sync.
 
 The passphrase protects your data on a public site, so make it long and
-don't reuse a password. If you change it later, delete the `garmin-data`
-branch first, because the old file can't be read with the new passphrase
-(the sync stops rather than overwriting it).
+don't reuse a password. To change it, update the secret and run the
+workflow: the old file can't be read with the new passphrase, so the sync
+rebuilds the last 90 days from Garmin.
 
 ## If Garmin blocks the sign-in ("429 Too Many Requests")
 

@@ -4,67 +4,146 @@
 **Purpose:** Context file for Claude Code / Claude project\
 **Product:** Personal nutrition, activity, and daily calorie-balance
 dashboard\
-**Status:** Revised 2026-10-17. HealthifyMe integration dropped in favour
-of manual daily entry; Garmin Connect is the only integration. See
-section 0, which overrides anything below that conflicts with it.
+**Status:** **Live since 2026-10-17** at
+<https://brianvimalan01.github.io/brv-health-dashboard-/>. Section 0 records
+every decision, how it was built and how to run it; it overrides anything
+in sections 1-14 (the original requirements) that conflicts with it.
 
 ------------------------------------------------------------------------
 
-## 0. Decisions and revised plan (2026-10-17)
+## 0. Current state: decisions, build and operations (updated 2026-10-17)
 
 This section overrides the rest of the document where they conflict.
+Sections 1-14 are the original requirements, kept for reference.
 
-### 0.1 Decisions
+### 0.1 Where things are
 
--   **No HealthifyMe integration.** HealthifyMe has no public API or data
+| What | Where |
+|---|---|
+| Live site | <https://brianvimalan01.github.io/brv-health-dashboard-/> |
+| Code | <https://github.com/Brianvimalan01/brv-health-dashboard-> (public, branch `main`) |
+| Encrypted Garmin data | branch `garmin-data` of the same repo, file `garmin.enc.json` |
+| Deploy + nightly sync | `.github/workflows/deploy.yml` ("Deploy to GitHub Pages") |
+| Repo docs | `README.md`, `docs/garmin.md`, `docs/requirements.md` (copy of this file), `CLAUDE.md` |
+| Local clone on Brian's Mac | `~/brv-health-dashboard-` (used for the one-time Garmin sign-in) |
+| Not used | `Brianvimalan01/brv` is Brian's public portfolio website (Astro), unrelated to this app |
+
+### 0.2 Decisions (all made by Brian on 2026-10-17)
+
+1.  **No HealthifyMe integration.** HealthifyMe has no public API or data
     export, and on Brian's iPhone it writes no nutrition data to Apple
-    Health. Instead, Brian enters his day's totals once, at the end of the
-    day: **carbohydrates, fat, protein and fibre** (grams).
--   **Calories are derived from the macros** (default method):
-    `kcal = 4 x protein + 4 x (carbs - fibre) + 2 x fibre + 9 x fat`.
-    HealthifyMe's carb figure is assumed to include fibre. The form also
-    has an optional "HealthifyMe calorie total" box; when filled it
-    overrides the derived value, and the UI shows which one was used.
--   **No Apple Health.** Brian does not want Apple Health connected, so no
-    route goes through it.
--   **Garmin Connect is the only integration.** Brian chose (2026-10-17)
-    automatic sync by signing in with his own Garmin account through an
-    unofficial library, accepting that it is not officially supported and
-    could break or conflict with Garmin's terms. Credentials live only in
-    server-side environment secrets. Manual entry of Garmin's total and
-    active calories stays as the fallback.
--   **Hosting: GitHub Pages, not Vercel** (Brian, 2026-10-17), like his
-    `brv` website. Consequences: the repository is public; there is no server
-    or database; food entries are stored in the browser (localStorage) with
-    backup export/import between devices; the Garmin sync runs nightly in
-    GitHub Actions and publishes its data **encrypted** with a passphrase that
-    the site decrypts in the browser. Repository:
-    `Brianvimalan01/brv-health-dashboard-`.
--   **Timezone:** `Asia/Kuala_Lumpur`.
+    Health (Health → Browse → Nutrition → Dietary Energy showed nothing).
+    Brian enters the day's totals by hand at the end of each day:
+    **carbs, fat, protein and fibre** (grams).
+2.  **Calories are derived from the macros:**
+    `kcal = 4 × protein + 4 × (carbs − fibre) + 2 × fibre + 9 × fat`
+    (HealthifyMe's carbs are assumed to include fibre). An optional
+    "HealthifyMe calorie total" box overrides the derived value when filled;
+    the page says which one is used.
+3.  **No Apple Health** in any route.
+4.  **Garmin Connect is the only integration**, using an unofficial
+    sign-in with Brian's own account (open-source `garmin-connect` 1.6.2,
+    pinned). Brian accepted that it isn't an official Garmin API, may break
+    if Garmin changes its sign-in, and may conflict with Garmin's terms.
+    Typing burned calories by hand stays available as a fallback. The
+    `@gooin/garmin-connect` fork was rejected because its code is obfuscated.
+5.  **Hosting on GitHub Pages, not Vercel**, like the brv site. So: public
+    repository, no server, no database, no login page.
+6.  **Garmin data is published encrypted** ("Encrypted sync" option): a
+    nightly GitHub Actions job encrypts it with a passphrase, and the site
+    decrypts it in the browser.
+7.  **Dark mode** everywhere, regardless of device setting.
+8.  **Timezone** `Asia/Kuala_Lumpur`; **maintenance band** ±150 kcal
+    (changeable on the Backup page).
 
-### 0.2 Revised plan
+### 0.3 How it works
 
-1.  **Garmin access route: chosen** (unofficial sign-in, manual fallback).
-2.  **Build the core.** Repository, database, end-of-day macro form,
-    calorie derivation, balance calculation against Garmin's total burn,
-    with unit tests.
-3.  **Build the dashboard.** Daily overview, history and weekly trends,
-    Garmin sync status, private login; deploy privately.
-4.  **Turn on Garmin sync.** Pull total/active calories and activities
-    automatically by signing in with Brian's Garmin account.
+-   **Static site:** Next.js 15 + TypeScript + Tailwind 4, built with
+    `output: "export"` and served under `/brv-health-dashboard-/`.
+-   **Food entries** (and hand-typed burned calories, and settings) live in
+    the browser's localStorage, per device. The Backup page downloads a
+    JSON backup, imports one (merging by date, newer entry wins) and exports
+    CSV. Nothing personal is in the repository.
+-   **Garmin sync** (`scripts/garmin-sync.ts`) runs in GitHub Actions every
+    night at 00:30 Malaysia time (16:30 UTC) and on "Run workflow". It:
+    1. restores `garmin.enc.json` from the `garmin-data` branch;
+    2. signs in with the `GARMIN_TOKEN(S)` session token (falls back to
+       email + password if no token);
+    3. fetches the daily summary (total, active and resting kcal) for the
+       last 3 days (90 on a first run or after a passphrase change) and
+       recent activities;
+    4. encrypts everything (AES-256-GCM, key from PBKDF2-SHA256, 600,000
+       rounds) with `GARMIN_DATA_PASSPHRASE` and commits it to
+       `garmin-data`;
+    5. builds and deploys the site with that file at `data/garmin.enc.json`.
+    It prints only counts, as a run annotation ("Garmin sync done: N days,
+    M recent activities"), because Actions logs of a public repo are public.
+-   **In the browser**, the Activity box asks for the passphrase once per
+    device ("Remember on this device"). Spaces around it are ignored;
+    capitals matter.
+-   **Calorie balance** = eaten − burned. Garmin's `totalKilocalories` is
+    the day's total and is never added to active, resting or workout
+    calories. A hand-typed burned value overrides Garmin for that day.
+    Status: deficit / around maintenance (±150) / surplus / incomplete data.
+    Today is labelled provisional.
+-   **Pages:** Today (date picker, cards, macro form, Garmin activity,
+    sources), History (7/30/90 days, weekly averages of finished complete
+    days), Backup (backup/import/CSV, tolerance, lock Garmin data).
+-   **Tests:** 27 unit tests (calorie maths, balance, dates, Garmin
+    normalization, encryption, day summary). `npm run verify` runs
+    type-check, lint, tests and the static build.
 
-### 0.3 Supporting steps added to the plan
+### 0.4 GitHub setup (done)
 
--   **Privacy on a public site:** Garmin data is encrypted with a passphrase;
-    food entries never leave the browser. Garmin credentials and the
-    passphrase live only in GitHub Actions secrets.
--   **One-time GitHub setup:** Pages source = GitHub Actions, plus three
-    repository secrets (see the repository README).
--   **Settings:** timezone and maintenance tolerance (default ±150 kcal).
--   **Editing past days:** a missed or wrong entry can be corrected later.
--   **Backup:** download/import a JSON backup (also moves entries between
-    devices) and export CSV.
--   **Optional later:** body-weight log and daily calorie/protein targets.
+-   Settings → Pages → Source: **GitHub Actions**. Claude can't change this
+    setting or publish a public site on its own; Brian did it.
+-   Repository secrets (Settings → Secrets and variables → Actions →
+    Repository secrets): `GARMIN_EMAIL`, `GARMIN_PASSWORD`,
+    `GARMIN_DATA_PASSPHRASE`, and the session token saved as
+    `GARMIN_TOKEN` (the workflow accepts `GARMIN_TOKEN` or `GARMIN_TOKENS`).
+-   The workflow shows "Found secret …" steps (green = present, skipped =
+    missing), so missing secrets are visible without reading logs.
+
+### 0.5 Problems hit and how they were solved
+
+| Problem | Cause | Fix |
+|---|---|---|
+| Site showed 404 | GitHub Pages wasn't enabled | Brian set Pages source to GitHub Actions |
+| Sync always skipped | Workflow bug: a step's `if` can't read its own `env` | Job-level `HAS_GARMIN` flag |
+| Sync skipped after secrets "added" | Secrets weren't visible to the workflow yet | Re-added as repository secrets; presence steps added |
+| `429 Too Many Requests` from Garmin | Garmin rate-limits password sign-ins from cloud servers | One-time `npm run garmin-login` on Brian's Mac → token saved as `GARMIN_TOKEN` secret |
+| Passphrase rejected on the site | File had been encrypted with a different passphrase value | Sync now trims the passphrase and rebuilds 90 days from Garmin when it changes; site trims input and disables autocorrect |
+
+### 0.6 Day-to-day use
+
+-   Each evening: open the site, enter carbs, fat, protein, fibre (and
+    optionally HealthifyMe's calorie total), tap **Save day**.
+-   Burned calories appear after the nightly sync; today's figure is
+    provisional until the day ends.
+-   Download a backup from the Backup page now and then (iPhone: save to
+    Files). Garmin data needs no backup; it's re-fetched from Garmin.
+-   iPhone: Safari → Share → Add to Home Screen; keep using that same
+    browser, since entries are stored there.
+
+### 0.7 Maintenance
+
+-   **Sync fails** → GitHub emails Brian; the run page shows the reason as
+    an annotation. The site still deploys, and burned calories can be typed
+    by hand meanwhile.
+-   **Token expires** (about a year) or sign-in errors → on the Mac:
+    `export PATH=~/.local/node/bin:$PATH; cd ~/brv-health-dashboard- && git pull && npm run garmin-login`,
+    then update the `GARMIN_TOKEN` secret with the copied token. Never paste
+    the token or passwords into chat or screenshots.
+-   **Change the passphrase** → update `GARMIN_DATA_PASSPHRASE`, run the
+    workflow; the sync rebuilds 90 days.
+-   **Run a sync now** → Actions → Deploy to GitHub Pages → Run workflow.
+-   **Code changes** → edit, `npm run verify`, push to `main`; it deploys
+    automatically.
+
+### 0.8 Possible next steps (not started)
+
+-   Body-weight log and daily calorie/protein targets.
+-   Optional cross-device sync for food entries (currently per browser).
 
 ------------------------------------------------------------------------
 

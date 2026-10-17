@@ -180,12 +180,22 @@ export function UnlockForm({
     >
       <p className="text-sm text-muted">Your Garmin data is encrypted. Enter your passphrase to see it.</p>
       <div className="flex gap-2">
-        <input type="password" name="passphrase" autoComplete="current-password" required placeholder="Passphrase" />
+        <input
+          type="password"
+          name="passphrase"
+          autoComplete="current-password"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          required
+          placeholder="Passphrase"
+        />
         <SubmitButton>Unlock</SubmitButton>
       </div>
       <label className="flex items-center gap-2 text-xs text-muted">
         <input type="checkbox" name="remember" defaultChecked /> Remember on this device
       </label>
+      <p className="text-xs text-muted">It&apos;s the GARMIN_DATA_PASSPHRASE secret on GitHub, exactly as typed there (capitals count).</p>
       {error && <p className="text-sm text-surplus">{error}</p>}
     </form>
   );

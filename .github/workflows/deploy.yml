@@ -29,6 +29,7 @@ jobs:
       HAS_GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL != '' }}
       HAS_GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD != '' }}
       HAS_GARMIN_DATA_PASSPHRASE: ${{ secrets.GARMIN_DATA_PASSPHRASE != '' }}
+      HAS_GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,6 +71,9 @@ jobs:
         run: "true"
       - name: Found secret GARMIN_DATA_PASSPHRASE
         if: env.HAS_GARMIN_DATA_PASSPHRASE == 'true'
+        run: "true"
+      - name: Found secret GARMIN_TOKENS
+        if: env.HAS_GARMIN_TOKENS == 'true'
         run: "true"
 
       - name: Sync Garmin

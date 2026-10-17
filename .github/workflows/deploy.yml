@@ -26,6 +26,9 @@ jobs:
     env:
       # Secrets can't be read in a step's own `if`, so expose whether they exist.
       HAS_GARMIN: ${{ secrets.GARMIN_EMAIL != '' && secrets.GARMIN_PASSWORD != '' && secrets.GARMIN_DATA_PASSPHRASE != '' }}
+      HAS_GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL != '' }}
+      HAS_GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD != '' }}
+      HAS_GARMIN_DATA_PASSPHRASE: ${{ secrets.GARMIN_DATA_PASSPHRASE != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +59,18 @@ jobs:
           else
             echo "No garmin-data branch yet."
           fi
+
+      # These show as green or skipped in the run summary, so a missing secret
+      # is visible without reading logs.
+      - name: Found secret GARMIN_EMAIL
+        if: env.HAS_GARMIN_EMAIL == 'true'
+        run: "true"
+      - name: Found secret GARMIN_PASSWORD
+        if: env.HAS_GARMIN_PASSWORD == 'true'
+        run: "true"
+      - name: Found secret GARMIN_DATA_PASSPHRASE
+        if: env.HAS_GARMIN_DATA_PASSPHRASE == 'true'
+        run: "true"
 
       - name: Sync Garmin
         id: sync

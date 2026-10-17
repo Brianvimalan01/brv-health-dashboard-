@@ -47,3 +47,4 @@ next-env.d.ts
 *.csv
 # encrypted Garmin data is published from the garmin-data branch, not main
 /public/data/
+garmin-tokens.json

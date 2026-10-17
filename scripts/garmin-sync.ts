@@ -29,8 +29,8 @@ function report(level: "notice" | "error", message: string) {
 }
 
 async function main() {
-  const username = requireEnv("GARMIN_EMAIL");
-  const password = requireEnv("GARMIN_PASSWORD");
+  const username = process.env.GARMIN_TOKENS ? "" : requireEnv("GARMIN_EMAIL");
+  const password = process.env.GARMIN_TOKENS ? "" : requireEnv("GARMIN_PASSWORD");
   const passphrase = requireEnv("GARMIN_DATA_PASSPHRASE");
   const file = process.env.DATA_FILE ?? "public/data/garmin.enc.json";
   const timeZone = process.env.APP_TIMEZONE || DEFAULT_TIMEZONE;
@@ -49,7 +49,15 @@ async function main() {
   const dates = dateRange(addDays(today, -(days - 1)), today);
 
   const client = new GarminConnect({ username, password });
-  await client.login();
+  // Prefer saved session tokens (from `npm run garmin-login` on your own
+  // computer): Garmin often rate-limits password sign-ins from cloud servers.
+  const savedTokens = process.env.GARMIN_TOKENS;
+  if (savedTokens) {
+    const { oauth1, oauth2 } = JSON.parse(savedTokens);
+    client.loadToken(oauth1, oauth2);
+  } else {
+    await client.login();
+  }
   const { displayName } = await client.getUserProfile();
 
   for (const date of dates) {

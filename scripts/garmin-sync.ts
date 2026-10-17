@@ -20,6 +20,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
+// In GitHub Actions, print as an annotation so the result shows on the run
+// summary page without opening the logs.
+function report(level: "notice" | "error", message: string) {
+  const line = message.replace(/[\r\n]+/g, " ");
+  if (process.env.GITHUB_ACTIONS) console.log(`::${level} title=Garmin sync::${line}`);
+  else (level === "error" ? console.error : console.log)(line);
+}
+
 async function main() {
   const username = requireEnv("GARMIN_EMAIL");
   const password = requireEnv("GARMIN_PASSWORD");
@@ -70,11 +78,11 @@ async function main() {
 
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, JSON.stringify(await encryptJson(data, passphrase)) + "\n");
-  console.log(`Garmin sync done: ${dates.length} days, ${activityCount} recent activities.`);
+  report("notice", `Garmin sync done: ${dates.length} days, ${activityCount} recent activities.`);
 }
 
 main().catch((err) => {
   // Message only: an error object from the HTTP client can include request details.
-  console.error(`Garmin sync failed: ${err instanceof Error ? err.message : "unknown error"}`);
+  report("error", `Garmin sync failed: ${err instanceof Error ? err.message : "unknown error"}`);
   process.exit(1);
 });

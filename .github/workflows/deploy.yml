@@ -23,6 +23,9 @@ jobs:
       contents: write # to save the encrypted Garmin file on the garmin-data branch
     outputs:
       sync: ${{ steps.sync.outcome }}
+    env:
+      # Secrets can't be read in a step's own `if`, so expose whether they exist.
+      HAS_GARMIN: ${{ secrets.GARMIN_EMAIL != '' && secrets.GARMIN_PASSWORD != '' && secrets.GARMIN_DATA_PASSPHRASE != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +48,7 @@ jobs:
 
       - name: Restore Garmin data
         run: |
+          echo "Garmin secrets present: $HAS_GARMIN"
           mkdir -p public/data
           if git fetch --depth=1 origin garmin-data 2>/dev/null; then
             git show origin/garmin-data:garmin.enc.json > public/data/garmin.enc.json
@@ -55,7 +59,7 @@ jobs:
 
       - name: Sync Garmin
         id: sync
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && env.GARMIN_EMAIL != ''
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && env.HAS_GARMIN == 'true'
         continue-on-error: true
         env:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}

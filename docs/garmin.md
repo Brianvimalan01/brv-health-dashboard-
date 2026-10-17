@@ -37,6 +37,21 @@ don't reuse a password. If you change it later, delete the `garmin-data`
 branch first, because the old file can't be read with the new passphrase
 (the sync stops rather than overwriting it).
 
+## If Garmin blocks the sign-in ("429 Too Many Requests")
+
+Garmin rate-limits password sign-ins, especially from cloud servers such as
+GitHub's. The fix is to sign in once from your own computer and give the job
+the resulting session tokens instead:
+
+```bash
+GARMIN_EMAIL=you@example.com GARMIN_PASSWORD='...' npm run garmin-login
+```
+
+Copy the contents of the `garmin-tokens.json` it writes into a new repository
+secret named `GARMIN_TOKENS`, then delete the file. When `GARMIN_TOKENS` is
+set, the job uses it and never sends your password. The tokens last about a
+year; repeat this when the sync starts failing with a sign-in error.
+
 ## Caveats (accepted on 2026-10-17)
 
 - This uses the open-source

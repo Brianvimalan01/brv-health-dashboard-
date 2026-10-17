@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build",
-    "garmin-sync": "tsx scripts/garmin-sync.ts"
+    "garmin-sync": "tsx scripts/garmin-sync.ts",
+    "garmin-login": "tsx scripts/garmin-login.ts"
   },
   "dependencies": {
     "garmin-connect": "1.6.2",

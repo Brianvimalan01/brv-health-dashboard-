@@ -25,7 +25,7 @@ jobs:
       sync: ${{ steps.sync.outcome }}
     env:
       # Secrets can't be read in a step's own `if`, so expose whether they exist.
-      HAS_GARMIN: ${{ secrets.GARMIN_EMAIL != '' && secrets.GARMIN_PASSWORD != '' && secrets.GARMIN_DATA_PASSPHRASE != '' }}
+      HAS_GARMIN: ${{ (secrets.GARMIN_TOKENS != '' || (secrets.GARMIN_EMAIL != '' && secrets.GARMIN_PASSWORD != '')) && secrets.GARMIN_DATA_PASSPHRASE != '' }}
       HAS_GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL != '' }}
       HAS_GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD != '' }}
       HAS_GARMIN_DATA_PASSPHRASE: ${{ secrets.GARMIN_DATA_PASSPHRASE != '' }}
@@ -80,6 +80,7 @@ jobs:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           GARMIN_DATA_PASSPHRASE: ${{ secrets.GARMIN_DATA_PASSPHRASE }}
+          GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
           DATA_FILE: public/data/garmin.enc.json
         run: npm run garmin-sync
 

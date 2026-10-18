@@ -48,3 +48,5 @@ next-env.d.ts
 # encrypted Garmin data is published from the garmin-data branch, not main
 /public/data/
 garmin-tokens.json
+# written by next.config.ts on each build
+/public/version.json

@@ -112,6 +112,10 @@ Sections 1-14 are the original requirements, kept for reference.
     weigh-ins); History (7/30/90 days from the start date); Backup
     (backup/import/CSV, maintenance band, start date, goal, height, lock
     Garmin data).
+-   **Update banner:** each build publishes `version.json`; an open page
+    checks it on load and when brought back to the foreground, and offers
+    "tap to reload" when a newer deploy is live (the iPhone Home Screen app
+    otherwise keeps showing the old page).
 -   **Fat estimates** use 7,700 kcal per kg and are labelled as estimates
     from calories, next to the actual scale change.
 -   **Coach tips** are plain rules: logging gaps, the week's surplus or

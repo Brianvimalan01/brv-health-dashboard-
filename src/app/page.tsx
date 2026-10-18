@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { DayView } from "@/components/day-view";
+import { DashboardView } from "@/components/dashboard-view";
 
-export default function DayPage() {
+export default function DashboardPage() {
   return (
     <Suspense>
-      <DayView />
+      <DashboardView />
     </Suspense>
   );
 }

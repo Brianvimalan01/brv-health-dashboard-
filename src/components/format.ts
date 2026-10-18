@@ -64,3 +64,21 @@ export const STATUS_COLOR = {
   surplus: "text-surplus",
   incomplete: "text-muted",
 } as const;
+
+export function shortDate(date: string): string {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(
+    new Date(`${date}T00:00:00Z`),
+  );
+}
+
+export function weekdayInitial(date: string): string {
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" })
+    .format(new Date(`${date}T00:00:00Z`))
+    .slice(0, 2);
+}
+
+export function signedKg(n: number | null | undefined, digits = 1): string {
+  if (n == null) return "—";
+  const r = Number(n.toFixed(digits));
+  return `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(digits)} kg`;
+}

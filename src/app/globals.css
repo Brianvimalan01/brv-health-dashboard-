@@ -2,15 +2,22 @@
 
 :root {
   color-scheme: dark;
-  --background: #0f0f10;
-  --surface: #18181b;
-  --foreground: #ededed;
-  --muted: #a1a1aa;
-  --border: #2a2a2e;
-  --accent: #60a5fa;
-  --deficit: #4ade80;
-  --surplus: #fbbf24;
-  --maintenance: #60a5fa;
+  --background: #0b0d12;
+  --surface: #141821;
+  --surface-2: #1b2130;
+  --foreground: #eceef3;
+  --muted: #9aa1b2;
+  --border: #262d3d;
+  --accent: #9085e9;
+  /* Diverging pair for the calorie balance: blue below zero, red above, with
+     a neutral midpoint. Text steps are lighter than the chart marks. */
+  --deficit: #6aa8f0;
+  --surplus: #f08484;
+  --maintenance: #c9ccd6;
+  --deficit-mark: #3987e5;
+  --surplus-mark: #e66767;
+  --weight: #9085e9;
+  --raw: #6b7280;
 }
 
 @theme inline {
@@ -23,16 +30,26 @@
   --color-deficit: var(--deficit);
   --color-surplus: var(--surplus);
   --color-maintenance: var(--maintenance);
+  --color-surface-2: var(--surface-2);
+  --color-deficit-mark: var(--deficit-mark);
+  --color-surplus-mark: var(--surplus-mark);
+  --color-weight: var(--weight);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgb(144 133 233 / 0.12), transparent 60%),
+    radial-gradient(900px 400px at 100% 0%, rgb(57 135 229 / 0.08), transparent 60%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 input[type="number"],
 input[type="date"],
+input[type="time"],
+input[type="text"],
 input[type="password"],
 textarea {
   background: var(--background);
@@ -41,4 +58,14 @@ textarea {
   padding: 0.5rem 0.625rem;
   width: 100%;
   font-variant-numeric: tabular-nums;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
 }

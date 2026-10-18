@@ -43,7 +43,9 @@ export function HistoryView() {
   const days = RANGES.find((r) => String(r) === params.get("days")) ?? 30;
   const to = today();
   const garmin = state.status === "unlocked" ? state.data : null;
-  const history = dateRange(addDays(to, -(days - 1)), to)
+  const start = store.settings.trackingStart;
+  const from = [addDays(to, -(days - 1)), start].sort()[1];
+  const history = (from <= to ? dateRange(from, to) : [])
     .reverse()
     .map((d) => summarizeDay(d, store, garmin, to));
   const weeks = weeklyAverages(history);
@@ -64,13 +66,13 @@ export function HistoryView() {
       </div>
       {state.status === "locked" && (
         <p className="text-sm text-muted">
-          Garmin data is locked. <Link href="/" className="text-accent">Unlock it on the Today page</Link> to see burned calories here.
+          Garmin data is locked. <Link href="/day" className="text-accent">Unlock it on the Log page</Link> to see burned calories here.
         </p>
       )}
 
-      <section className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <section className="overflow-x-auto rounded-2xl border border-border bg-surface/90">
         <h2 className="px-4 pt-4 font-semibold">Weekly averages</h2>
-        <p className="px-4 text-xs text-muted">Only finished days with both eaten and burned are counted.</p>
+        <p className="px-4 text-xs text-muted">Only finished days with both eaten and burned, from {start}, are counted.</p>
         <table className="mt-2 w-full text-sm tabular-nums">
           <thead className="text-left text-xs text-muted">
             <tr>
@@ -97,7 +99,7 @@ export function HistoryView() {
         </table>
       </section>
 
-      <section className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <section className="overflow-x-auto rounded-2xl border border-border bg-surface/90">
         <h2 className="px-4 pt-4 font-semibold">Daily</h2>
         <table className="mt-2 w-full text-sm tabular-nums">
           <thead className="text-left text-xs text-muted">
@@ -113,7 +115,7 @@ export function HistoryView() {
             {history.map((d) => (
               <tr key={d.date}>
                 <td className="px-4 py-2">
-                  <Link href={`/?date=${d.date}`} className="hover:text-accent">{d.date}</Link>
+                  <Link href={`/day?date=${d.date}`} className="hover:text-accent">{d.date}</Link>
                 </td>
                 <td className="px-2 py-2 text-right">{f.kcal(d.balance.intakeKcal)}</td>
                 <td className="px-2 py-2 text-right">{f.kcal(d.balance.totalBurnedKcal)}</td>

@@ -5,8 +5,10 @@ import { kcalFromMacros, validateMacros } from "@/lib/calorie-balance/macros";
 import {
   saveManualEnergy,
   saveNutrition,
+  saveWeight,
   type ManualEnergyEntry,
   type NutritionEntry,
+  type WeightEntry,
 } from "@/lib/store";
 
 type Feedback = { ok: boolean; message: string } | null;
@@ -197,6 +199,60 @@ export function UnlockForm({
       </label>
       <p className="text-xs text-muted">It&apos;s the GARMIN_DATA_PASSPHRASE secret on GitHub, exactly as typed there (capitals count).</p>
       {error && <p className="text-sm text-surplus">{error}</p>}
+    </form>
+  );
+}
+
+export function WeightForm({ date, defaults, onDate }: { date: string; defaults: WeightEntry | null; onDate: (d: string) => void }) {
+  const [feedback, setFeedback] = useState<Feedback>(null);
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const kg = num(form, "kg");
+    if (kg == null || !(kg > 20 && kg < 400)) {
+      setFeedback({ ok: false, message: "Enter your weight in kg" });
+      return;
+    }
+    const time = String(form.get("time") ?? "").trim() || null;
+    const notes = String(form.get("notes") ?? "").trim() || null;
+    saveWeight(date, { kg, time, notes });
+    setFeedback({ ok: true, message: "Saved" });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted">Date</span>
+          <input type="date" value={date} onChange={(e) => e.target.value && onDate(e.target.value)} />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted">Time</span>
+          <input type="time" name="time" defaultValue={defaults?.time ?? ""} />
+        </label>
+        <NumberField name="kg" label="Weight" unit="kg" required defaultValue={defaults?.kg} />
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted">Notes</span>
+          <input type="text" name="notes" defaultValue={defaults?.notes ?? ""} placeholder="e.g. after a big dinner" />
+        </label>
+      </div>
+      <div className="flex items-center gap-3">
+        <SubmitButton>{defaults ? "Update weigh-in" : "Save weigh-in"}</SubmitButton>
+        {defaults && (
+          <button
+            type="button"
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
+            onClick={() => {
+              saveWeight(date, null);
+              setFeedback({ ok: true, message: "Removed" });
+            }}
+          >
+            Remove
+          </button>
+        )}
+        <FeedbackText state={feedback} />
+      </div>
     </form>
   );
 }

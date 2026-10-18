@@ -21,14 +21,35 @@ export type ManualEnergyEntry = {
   updatedAt: string;
 };
 
+// One weigh-in per date; a second one on the same day replaces the first.
+export type WeightEntry = {
+  kg: number;
+  time: string | null;
+  notes: string | null;
+  updatedAt: string;
+};
+
 export type Settings = {
   toleranceKcal: number;
+  // Days before this date are left out of the dashboard, history and maths.
+  trackingStart: string;
+  // Weekly weight change aimed for; negative means losing.
+  goalKgPerWeek: number;
+  heightCm: number | null;
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  toleranceKcal: 150,
+  trackingStart: "2026-10-12",
+  goalKgPerWeek: -0.5,
+  heightCm: null,
 };
 
 export type StoreData = {
   version: 1;
   nutrition: Record<string, NutritionEntry>;
   manualEnergy: Record<string, ManualEnergyEntry>;
+  weights: Record<string, WeightEntry>;
   settings: Settings;
 };
 
@@ -37,8 +58,20 @@ const EMPTY: StoreData = {
   version: 1,
   nutrition: {},
   manualEnergy: {},
-  settings: { toleranceKcal: 150 },
+  weights: {},
+  settings: DEFAULT_SETTINGS,
 };
+
+// Fills in what older saved data and backups don't have yet.
+export function withDefaults(data: Partial<StoreData>): StoreData {
+  return {
+    version: 1,
+    nutrition: data.nutrition ?? {},
+    manualEnergy: data.manualEnergy ?? {},
+    weights: data.weights ?? {},
+    settings: { ...DEFAULT_SETTINGS, ...data.settings },
+  };
+}
 
 let cache: StoreData | null = null;
 const listeners = new Set<() => void>();
@@ -47,7 +80,7 @@ function read(): StoreData {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    cache = raw ? { ...EMPTY, ...(JSON.parse(raw) as StoreData) } : EMPTY;
+    cache = raw ? withDefaults(JSON.parse(raw) as Partial<StoreData>) : EMPTY;
   } catch {
     cache = EMPTY;
   }
@@ -92,6 +125,14 @@ export function saveManualEnergy(date: string, entry: Omit<ManualEnergyEntry, "u
   write({ ...s, manualEnergy });
 }
 
+export function saveWeight(date: string, entry: Omit<WeightEntry, "updatedAt"> | null) {
+  const s = read();
+  const weights = { ...s.weights };
+  if (entry) weights[date] = { ...entry, updatedAt: new Date().toISOString() };
+  else delete weights[date];
+  write({ ...s, weights });
+}
+
 export function saveSettings(settings: Settings) {
   write({ ...read(), settings });
 }
@@ -101,24 +142,27 @@ export function exportJson(): string {
 }
 
 // Import merges by date; for a date present in both, the newer entry wins.
-export function importJson(text: string): { days: number } {
+export function importJson(text: string): { days: number; weights: number } {
   const incoming = JSON.parse(text) as Partial<StoreData>;
-  if (incoming.version !== 1 || typeof incoming.nutrition !== "object") {
+  if (incoming.version !== 1 || (typeof incoming.nutrition !== "object" && typeof incoming.weights !== "object")) {
     throw new Error("This isn't a BRV Health backup file");
   }
   const s = read();
-  const newer = <T extends { updatedAt: string }>(a: Record<string, T>, b: Record<string, T> = {}) => {
+  const newer = <T extends { updatedAt: string }>(a: Record<string, T>, b: Record<string, T> | undefined) => {
     const out = { ...a };
-    for (const [d, v] of Object.entries(b)) if (!out[d] || out[d].updatedAt < v.updatedAt) out[d] = v;
+    for (const [d, v] of Object.entries(b ?? {})) if (!out[d] || out[d].updatedAt < v.updatedAt) out[d] = v;
     return out;
   };
   const next: StoreData = {
     ...s,
     nutrition: newer(s.nutrition, incoming.nutrition),
     manualEnergy: newer(s.manualEnergy, incoming.manualEnergy),
+    weights: newer(s.weights, incoming.weights),
+    // Height is the one setting a backup fills in, and only when it's unset here.
+    settings: { ...s.settings, heightCm: s.settings.heightCm ?? incoming.settings?.heightCm ?? null },
   };
   write(next);
-  return { days: Object.keys(incoming.nutrition ?? {}).length };
+  return { days: Object.keys(incoming.nutrition ?? {}).length, weights: Object.keys(incoming.weights ?? {}).length };
 }
 
 const noopSubscribe = () => () => {};

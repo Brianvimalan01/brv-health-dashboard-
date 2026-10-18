@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { summarizeDay } from "./day";
 import type { GarminData } from "./garmin/data";
-import type { StoreData } from "./store";
+import { DEFAULT_SETTINGS, type StoreData } from "./store";
 
 const store: StoreData = {
   version: 1,
@@ -9,7 +9,8 @@ const store: StoreData = {
     "2026-10-16": { carbsG: 250, fatG: 70, proteinG: 150, fibreG: 30, healthifymeKcal: null, notes: null, updatedAt: "" },
   },
   manualEnergy: {},
-  settings: { toleranceKcal: 150 },
+  weights: {},
+  settings: DEFAULT_SETTINGS,
 };
 
 const garmin: GarminData = {

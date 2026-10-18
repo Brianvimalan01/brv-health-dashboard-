@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { addDays, isLocalDate, MACRO_METHOD } from "@/lib/calorie-balance";
 import { APP_TIMEZONE, summarizeDay, today } from "@/lib/day";
-import { useHydrated, useStore } from "@/lib/store";
+import { dayTarget, KCAL_PER_KG, typicalBurn } from "@/lib/progress";
+import { useHydrated } from "@/lib/store";
+import { useProgress } from "./use-progress";
 import { useGarminContext } from "./garmin-provider";
 import { ManualEnergyForm, NutritionForm, UnlockForm } from "./forms";
 import { Card, Section } from "./ui";
@@ -13,8 +15,8 @@ import * as f from "./format";
 export function DayView() {
   const params = useSearchParams();
   const router = useRouter();
-  const store = useStore();
   const hydrated = useHydrated();
+  const { store, progress } = useProgress();
   const { state: garminState, unlock } = useGarminContext();
 
   const todayDate = today();
@@ -26,27 +28,45 @@ export function DayView() {
   const partial = day.isToday ? " so far" : "";
   const tz = APP_TIMEZONE;
   const burned = day.energyUsed === "manual" ? manual?.totalBurnedKcal : garmin?.totalBurnedKcal;
+  const start = store.settings.trackingStart;
+  // Today's burn is still rising, so today's target comes from a normal day.
+  const typical = typicalBurn(progress.days, progress.tdee);
+  const target = day.isToday
+    ? typical == null
+      ? null
+      : typical + (store.settings.goalKgPerWeek * KCAL_PER_KG) / 7
+    : dayTarget(balance.totalBurnedKcal, progress.calibration, store.settings);
+  const weighIn = store.weights[date];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={`/?date=${addDays(date, -1)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm" aria-label="Previous day">←</Link>
+        {date > start && (
+          <Link href={`/day?date=${addDays(date, -1)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm" aria-label="Previous day">←</Link>
+        )}
         <div>
           <h1 className="text-lg font-semibold">{day.isToday ? "Today" : f.longDate(date)}</h1>
           <p className="text-xs text-muted">{day.isToday ? f.longDate(date) + " · " : ""}{tz}</p>
         </div>
         {!day.isToday && (
-          <Link href={`/?date=${addDays(date, 1)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm" aria-label="Next day">→</Link>
+          <Link href={`/day?date=${addDays(date, 1)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm" aria-label="Next day">→</Link>
         )}
         <input
           type="date"
           value={date}
+          min={start}
           max={todayDate}
-          onChange={(e) => e.target.value && router.push(`/?date=${e.target.value}`)}
+          onChange={(e) => e.target.value && router.push(`/day?date=${e.target.value}`)}
           className="ml-auto !w-auto"
           aria-label="Pick a date"
         />
       </div>
+
+      {date < start && (
+        <p className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">
+          This day is before tracking started ({f.longDate(start)}), so it isn&apos;t counted on the dashboard.
+        </p>
+      )}
 
       {day.isToday && (
         <p className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">
@@ -72,6 +92,31 @@ export function DayView() {
           tone={f.STATUS_COLOR[balance.status]}
           sub={balance.status === "incomplete" ? "Needs both eaten and burned" : `±${store.settings.toleranceKcal} kcal counts as maintenance`}
         />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface/90 px-4 py-3 text-sm">
+        <div>
+          <span className="text-muted">Target: </span>
+          <strong className="tabular-nums">{target == null ? "—" : `${f.kcal(target)} kcal`}</strong>
+          <span className="text-xs text-muted">
+            {" "}
+            {target == null
+              ? "(needs the day's burn)"
+              : day.isToday
+                ? `(a normal day's burn${progress.tdee.ok ? " from your weight trend" : ""}, ${store.settings.goalKgPerWeek} kg/week; firms up once the day's burn is in)`
+                : progress.calibration
+                ? `(burn × ${progress.calibration.factor.toFixed(2)} from your weight trend, ${store.settings.goalKgPerWeek} kg/week)`
+                : `(burn, ${store.settings.goalKgPerWeek} kg/week)`}
+          </span>
+          {target != null && intake && (
+            <span className={`ml-2 tabular-nums ${intake.kcal > target ? "text-surplus" : "text-deficit"}`}>
+              {intake.kcal > target ? `${f.kcal(intake.kcal - target)} over` : `${f.kcal(target - intake.kcal)} left`}
+            </span>
+          )}
+        </div>
+        <Link href="/weight" className="ml-auto text-muted hover:text-foreground">
+          Weight: <span className="tabular-nums text-foreground">{weighIn ? `${weighIn.kg.toFixed(1)} kg` : "add"}</span>
+        </Link>
       </div>
 
       <Section title="Food (end-of-day totals)">

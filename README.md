@@ -14,6 +14,12 @@ in a surplus?** Published on GitHub Pages like the
   hand.
 - **Balance:** eaten − burned. Within ±150 kcal counts as maintenance
   (changeable on the Backup page). Today's numbers are marked provisional.
+- **Dashboard:** the week at a glance (net calories, estimated fat change,
+  weight, daily balance chart), progress since tracking started (12 Oct 2026
+  by default) and rule-based feedback.
+- **Weight:** weigh-ins typed by hand. Once there are enough (3+ over 7+
+  days with food logged), the app works out your real TDEE from intake and
+  the weight trend, and scales Garmin's daily burn to match for targets.
 
 Requirements and decisions: [docs/requirements.md](docs/requirements.md).
 
@@ -21,7 +27,7 @@ Requirements and decisions: [docs/requirements.md](docs/requirements.md).
 
 | Data | Where |
 |---|---|
-| Food entries, hand-typed burned calories, settings | Only in the browser you typed them in (localStorage). Use **Backup → Download backup** regularly, and **Import backup** to copy them to another device. |
+| Food entries, weigh-ins, hand-typed burned calories, settings | Only in the browser you typed them in (localStorage). Use **Backup → Download backup** regularly, and **Import backup** to copy them to another device. |
 | Garmin calories and activities | Encrypted file on the `garmin-data` branch, published with the site; decrypted in your browser with your passphrase. |
 
 Nothing personal is stored in the code. The repository is public, as GitHub
@@ -63,7 +69,8 @@ GARMIN_EMAIL=... GARMIN_PASSWORD=... GARMIN_DATA_PASSPHRASE=... npm run garmin-s
 | `src/lib/calorie-balance/` | Macro → calorie maths, balance and status, dates |
 | `src/lib/day.ts` | Combines food, Garmin and hand-typed values for one day |
 | `src/lib/store.ts` | Browser storage, backup and import |
+| `src/lib/progress.ts` | Weekly summaries, weight trend, weight-based TDEE, coach tips |
 | `src/lib/crypto.ts` | Passphrase encryption shared by the sync script and the browser |
 | `src/lib/garmin/` | Garmin data types, normalization, and in-browser decryption |
 | `scripts/garmin-sync.ts` | The nightly sync run by GitHub Actions |
-| `src/app/`, `src/components/` | Today, History and Backup pages |
+| `src/app/`, `src/components/` | Dashboard, Log (one day), Weight, History and Backup pages |

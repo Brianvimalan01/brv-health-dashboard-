@@ -11,7 +11,7 @@ in sections 1-14 (the original requirements) that conflicts with it.
 
 ------------------------------------------------------------------------
 
-## 0. Current state: decisions, build and operations (updated 2026-10-17)
+## 0. Current state: decisions, build and operations (updated 2026-10-18)
 
 This section overrides the rest of the document where they conflict.
 Sections 1-14 are the original requirements, kept for reference.
@@ -55,6 +55,23 @@ Sections 1-14 are the original requirements, kept for reference.
 7.  **Dark mode** everywhere, regardless of device setting.
 8.  **Timezone** `Asia/Kuala_Lumpur`; **maintenance band** ±150 kcal
     (changeable on the Backup page).
+9.  **Tracking starts 2026-10-12** (Brian, 2026-10-18): food wasn't logged
+    before then. Earlier days are left out of the dashboard, history and
+    all maths; Garmin history itself is kept. Changeable on the Backup page.
+10. **Weight is logged by hand** (date, time, kg, notes) and stored in the
+    browser with the food entries, included in backups. Height (for BMI)
+    is a setting, never in the repository.
+11. **Weight-based TDEE** (Brian, 2026-10-18): the real daily burn is
+    worked out from average intake minus the weight trend × 7,700 kcal/kg,
+    over the last 28 days (starting at the last weigh-in before tracking
+    began). It needs 3+ weigh-ins spread over 7+ days and food logged on
+    70%+ of those days; otherwise it says what's missing and Garmin's burn
+    is used alone. Garmin's daily total is scaled by
+    (weight-based TDEE ÷ Garmin average), clamped to 0.75-1.25, for
+    targets, so active days still get more food.
+12. **Goal** −0.5 kg/week by default (Backup page). Day target = that
+    day's burn (scaled) + goal × 7,700 ÷ 7; today's target uses a normal
+    day's burn because today's is still rising.
 
 ### 0.3 How it works
 
@@ -86,11 +103,23 @@ Sections 1-14 are the original requirements, kept for reference.
     calories. A hand-typed burned value overrides Garmin for that day.
     Status: deficit / around maintenance (±150) / surplus / incomplete data.
     Today is labelled provisional.
--   **Pages:** Today (date picker, cards, macro form, Garmin activity,
-    sources), History (7/30/90 days, weekly averages of finished complete
-    days), Backup (backup/import/CSV, tolerance, lock Garmin data).
--   **Tests:** 27 unit tests (calorie maths, balance, dates, Garmin
-    normalization, encryption, day summary). `npm run verify` runs
+-   **Pages:** Dashboard `/` (this week's net calories, fat estimate from
+    calories, weight, daily balance chart, protein vs 1.6 g/kg, coach tips,
+    progress since the start date, weekly progress table, week picker);
+    Log `/day` (date picker, cards, day target, macro form, Garmin
+    activity, sources; old `/?date=` links redirect here); Weight `/weight`
+    (weigh-in form, chart with 7-day trend, weight-based TDEE, all
+    weigh-ins); History (7/30/90 days from the start date); Backup
+    (backup/import/CSV, maintenance band, start date, goal, height, lock
+    Garmin data).
+-   **Fat estimates** use 7,700 kcal per kg and are labelled as estimates
+    from calories, next to the actual scale change.
+-   **Coach tips** are plain rules: logging gaps, the week's surplus or
+    deficit, Garmin vs weight-based burn, calorie target, protein, and
+    active calories vs last week. Each says what it's based on.
+-   **Tests:** 39 unit tests (calorie maths, balance, dates, Garmin
+    normalization, encryption, day summary, weekly progress, weight trend,
+    TDEE). `npm run verify` runs
     type-check, lint, tests and the static build.
 
 ### 0.4 GitHub setup (done)
@@ -116,8 +145,12 @@ Sections 1-14 are the original requirements, kept for reference.
 
 ### 0.6 Day-to-day use
 
--   Each evening: open the site, enter carbs, fat, protein, fibre (and
-    optionally HealthifyMe's calorie total), tap **Save day**.
+-   Each evening: open the site, **Log** page, enter carbs, fat, protein,
+    fibre (and optionally HealthifyMe's calorie total), tap **Save day**.
+-   Most mornings: **Weight** page, enter the weigh-in (after the toilet,
+    before eating).
+-   Weekly: check the **Dashboard** for the week's net, fat estimate and
+    coach notes.
 -   Burned calories appear after the nightly sync; today's figure is
     provisional until the day ends.
 -   Download a backup from the Backup page now and then (iPhone: save to
@@ -142,7 +175,6 @@ Sections 1-14 are the original requirements, kept for reference.
 
 ### 0.8 Possible next steps (not started)
 
--   Body-weight log and daily calorie/protein targets.
 -   Optional cross-device sync for food entries (currently per browser).
 
 ------------------------------------------------------------------------

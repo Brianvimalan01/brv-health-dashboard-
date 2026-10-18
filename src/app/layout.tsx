@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { GarminProvider } from "@/components/garmin-provider";
 import { Nav } from "@/components/nav";
+import { UpdateBanner } from "@/components/update-banner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className="antialiased min-h-screen">
+        <UpdateBanner />
         <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold">

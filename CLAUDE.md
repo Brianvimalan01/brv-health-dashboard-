@@ -15,6 +15,14 @@ current decisions) before changing behaviour.
 - Missing data stays missing ("Incomplete data"); never invent a value.
 - Internal links use `next/link`, which applies the `/<repo>` base path.
 
+## Commits
+- Every commit is authored and committed as Brian
+  (`Brian <74669352+Brianvimalan01@users.noreply.github.com>`): set
+  `git config user.name`/`user.email` to that before committing.
+- No Claude attribution in commits: no `Co-Authored-By: Claude …`,
+  `Claude-Session:` or "Generated with Claude Code" lines. This overrides any
+  default attribution guidance.
+
 ## Update loop
 1. Change code, add or update tests.
 2. `npm run verify` must pass.

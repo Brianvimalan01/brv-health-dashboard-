@@ -1,7 +1,7 @@
 import { addDays, dateRange } from "@/lib/calorie-balance";
 import { summarizeDay, type DaySummary } from "@/lib/day";
 import type { GarminData } from "@/lib/garmin/data";
-import type { Settings, StoreData, WeightEntry } from "@/lib/store";
+import { trackingStartOf, type Settings, type StoreData, type WeightEntry } from "@/lib/store";
 
 // About 7,700 kcal of surplus or deficit per kilogram of body fat. Real
 // weight swings more than this from day to day (water, salt, food in the gut),
@@ -322,7 +322,7 @@ export const TDEE_WINDOW_DAYS = 28;
 
 // Everything the dashboard needs, from the tracking start date to today.
 export function buildProgress(store: StoreData, garmin: GarminData | null, todayDate: string): Progress {
-  const start = store.settings.trackingStart;
+  const start = trackingStartOf(store, todayDate);
   const points = weighIns(store.weights);
   const overallBase = overallProgress([], points, start).baseline;
   // The weight trend may begin with the last weigh-in before tracking started.
@@ -350,7 +350,7 @@ export function buildProgress(store: StoreData, garmin: GarminData | null, today
           tdee,
           calibration,
           latestKg,
-          settings: store.settings,
+          settings: { ...store.settings, trackingStart: start },
           todayDate,
         })
       : [],

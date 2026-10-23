@@ -9,7 +9,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: "30 16 * * *" # 00:30 in Malaysia
+    - cron: "30 16 * * *" # 16:30 UTC (00:30 in the default timezone, Asia/Kuala_Lumpur)
   workflow_dispatch:
 
 concurrency:
@@ -24,6 +24,9 @@ jobs:
     outputs:
       sync: ${{ steps.sync.outcome }}
     env:
+      # Optional repository variable; empty falls back to the default timezone.
+      APP_TIMEZONE: ${{ vars.APP_TIMEZONE }}
+      NEXT_PUBLIC_APP_TIMEZONE: ${{ vars.APP_TIMEZONE }}
       # Secrets can't be read in a step's own `if`, so expose whether they exist.
       HAS_GARMIN: ${{ (secrets.GARMIN_TOKENS != '' || secrets.GARMIN_TOKEN != '' || (secrets.GARMIN_EMAIL != '' && secrets.GARMIN_PASSWORD != '')) && secrets.GARMIN_DATA_PASSPHRASE != '' }}
       HAS_GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL != '' }}

@@ -32,6 +32,7 @@ export type WeightEntry = {
 export type Settings = {
   toleranceKcal: number;
   // Days before this date are left out of the dashboard, history and maths.
+  // Empty means "from the first logged day" (see trackingStartOf).
   trackingStart: string;
   // Weekly weight change aimed for; negative means losing.
   goalKgPerWeek: number;
@@ -40,7 +41,7 @@ export type Settings = {
 
 export const DEFAULT_SETTINGS: Settings = {
   toleranceKcal: 150,
-  trackingStart: "2026-10-12",
+  trackingStart: "",
   goalKgPerWeek: -0.5,
   heightCm: null,
 };
@@ -71,6 +72,15 @@ export function withDefaults(data: Partial<StoreData>): StoreData {
     weights: data.weights ?? {},
     settings: { ...DEFAULT_SETTINGS, ...data.settings },
   };
+}
+
+// The tracking start date: the one set on the Backup page, else the first day
+// with food or burn logged, else today. Weigh-ins don't count, so one taken
+// before the first logged day can still be the baseline.
+export function trackingStartOf(store: StoreData, todayDate: string): string {
+  if (store.settings.trackingStart) return store.settings.trackingStart;
+  const logged = [...Object.keys(store.nutrition), ...Object.keys(store.manualEnergy)].sort();
+  return logged[0] && logged[0] < todayDate ? logged[0] : todayDate;
 }
 
 let cache: StoreData | null = null;

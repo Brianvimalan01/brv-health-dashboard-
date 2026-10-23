@@ -2,8 +2,7 @@
 
 A personal dashboard that answers one question each day: **how many calories
 did I eat, how many did I burn, and am I in a deficit, around maintenance or
-in a surplus?** Published on GitHub Pages like the
-[brv website](https://github.com/Brianvimalan01/brv).
+in a surplus?** Published on GitHub Pages; fork it to run your own copy.
 
 - **Eaten:** type the day's carbs, fat, protein and fibre at the end of the
   day (from HealthifyMe). Calories are calculated as
@@ -15,13 +14,13 @@ in a surplus?** Published on GitHub Pages like the
 - **Balance:** eaten − burned. Within ±150 kcal counts as maintenance
   (changeable on the Backup page). Today's numbers are marked provisional.
 - **Dashboard:** the week at a glance (net calories, estimated fat change,
-  weight, daily balance chart), progress since tracking started (12 Oct 2026
-  by default) and rule-based feedback.
+  weight, daily balance chart), progress since tracking started (your first
+  logged day, or a date you set) and rule-based feedback.
 - **Weight:** weigh-ins typed by hand. Once there are enough (3+ over 7+
   days with food logged), the app works out your real TDEE from intake and
   the weight trend, and scales Garmin's daily burn to match for targets.
 
-Requirements and decisions: [docs/requirements.md](docs/requirements.md).
+How it works, design choices and running your own copy: [docs/requirements.md](docs/requirements.md).
 
 ## Where your data lives
 
@@ -42,7 +41,7 @@ Pages requires on a free account.
 3. **Actions → Deploy to GitHub Pages → Run workflow** for the first Garmin
    sync and deploy.
 
-The site is then at `https://brianvimalan01.github.io/<repo-name>/`. Every
+The site is then at `https://<your-username>.github.io/<repo-name>/`. Every
 push to `main` redeploys it, and the nightly run refreshes Garmin data.
 
 ## Local development

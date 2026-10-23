@@ -15,7 +15,7 @@ import {
   weightSlope,
 } from "./progress";
 import { summarizeDay } from "./day";
-import { DEFAULT_SETTINGS, withDefaults, type StoreData } from "./store";
+import { DEFAULT_SETTINGS, trackingStartOf, withDefaults, type StoreData } from "./store";
 
 // 100 g protein, 200 g carbs, 0 fibre, 100 g fat = 400 + 800 + 900 = 2100 kcal
 const food = { carbsG: 200, fatG: 100, proteinG: 100, fibreG: 0, healthifymeKcal: null, notes: null, updatedAt: "" };
@@ -120,7 +120,7 @@ describe("weekly and overall progress", () => {
   });
 
   it("ignores days before the tracking start", () => {
-    const early = { ...s, nutrition: { ...s.nutrition, "2026-10-05": food } };
+    const early = { ...s, nutrition: { ...s.nutrition, "2026-10-05": food }, settings: { ...s.settings, trackingStart: "2026-10-12" } };
     const p = buildProgress(early, garmin(["2026-10-05", ...dates], 2000), "2026-10-18");
     expect(p.days[0].date).toBe("2026-10-12");
     expect(p.overall.netKcal).toBe(500);
@@ -133,6 +133,23 @@ describe("withDefaults", () => {
   it("upgrades older saved data", () => {
     const old = withDefaults({ version: 1, nutrition: {}, manualEnergy: {}, settings: { toleranceKcal: 200 } as never });
     expect(old.weights).toEqual({});
-    expect(old.settings).toMatchObject({ toleranceKcal: 200, trackingStart: "2026-10-12", goalKgPerWeek: -0.5, heightCm: null });
+    expect(old.settings).toMatchObject({ toleranceKcal: 200, trackingStart: "", goalKgPerWeek: -0.5, heightCm: null });
+  });
+});
+
+describe("trackingStartOf", () => {
+  const set = (trackingStart: string) => ({ ...DEFAULT_SETTINGS, trackingStart });
+
+  it("uses the date set on the Backup page", () => {
+    expect(trackingStartOf(store(["2026-10-05"], {}, { settings: set("2026-10-12") }), "2026-10-18")).toBe("2026-10-12");
+  });
+
+  it("otherwise starts at the first day with food or burn logged", () => {
+    const s = store(["2026-10-14", "2026-10-09"], { "2026-10-01": 90 });
+    expect(trackingStartOf(s, "2026-10-18")).toBe("2026-10-09");
+  });
+
+  it("starts today when nothing is logged yet", () => {
+    expect(trackingStartOf(store([], {}), "2026-10-18")).toBe("2026-10-18");
   });
 });

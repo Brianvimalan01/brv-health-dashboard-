@@ -5,8 +5,7 @@ Garmin account.
 
 ## How it works
 
-1. Every night at 00:30 Malaysia time (and whenever you run the workflow by
-   hand), `.github/workflows/deploy.yml` runs `scripts/garmin-sync.ts`.
+1. Every night at 16:30 UTC (and whenever you run the workflow by hand), `.github/workflows/deploy.yml` runs `scripts/garmin-sync.ts`.
 2. The script signs in to Garmin Connect with your account, fetches the last
    3 days (90 on the very first run) and merges them into the existing data.
 3. It encrypts everything with your passphrase (AES-256-GCM, key from

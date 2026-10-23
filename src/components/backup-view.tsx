@@ -106,11 +106,11 @@ export function BackupView() {
             onSave={(v) => v != null && v >= 0 && saveSettings({ ...store.settings, toleranceKcal: v })}
           />
           <label className="block space-y-1 text-sm">
-            <span className="text-muted">Track from (earlier days are left out)</span>
+            <span className="text-muted">Track from (earlier days are left out; blank = your first logged day)</span>
             <input
               type="date"
               defaultValue={store.settings.trackingStart}
-              onBlur={(e) => e.target.value && saveSettings({ ...store.settings, trackingStart: e.target.value })}
+              onBlur={(e) => e.target.value !== store.settings.trackingStart && saveSettings({ ...store.settings, trackingStart: e.target.value })}
             />
           </label>
           <SettingField
